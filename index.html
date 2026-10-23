@@ -1,1 +1,125 @@
 index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pinnacle Badminton Academy</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d0a;color:#f5fff9;font-family:Arial,sans-serif}
+header{padding:24px 18px;background:#111a14;border-bottom:1px solid #284333}
+.brand{color:#00e69a;font-size:12px;letter-spacing:3px;font-weight:bold}
+h1{font-size:25px;margin-bottom:5px}
+main{max-width:850px;margin:auto;padding:16px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:#111a14;border:1px solid #284333;border-radius:13px;padding:16px;margin-bottom:13px}
+small{color:#9aafa2}
+.metric{font-size:24px;color:#00e69a;font-weight:bold;margin-top:8px}
+label{display:block;color:#a9bdb0;font-size:12px;margin:10px 0}
+input,select,button{display:block;width:100%;padding:12px;margin-top:6px;border-radius:8px;border:1px solid #30463a;background:#0a110d;color:white;font-size:15px}
+button{background:#00d68f;color:#06140d;border:0;font-weight:bold;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{text-align:left;padding:8px 4px;border-bottom:1px solid #30463a}
+.scroll{overflow-x:auto}
+@media(min-width:650px){.cards{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">PINNACLE / BADMINTON</div>
+<h1>Academy Dashboard</h1>
+<small>Bookings · Sales · Expenses · Daily accounts</small>
+</header>
+<main>
+<div class="cards">
+<div class="card"><small>Today's Collections</small><div class="metric" id="collections">₹0</div></div>
+<div class="card"><small>Bookings</small><div class="metric" id="count">0</div></div>
+<div class="card"><small>Expenses</small><div class="metric" id="costs">₹0</div></div>
+<div class="card"><small>Net Cash Flow</small><div class="metric" id="net">₹0</div></div>
+</div>
+<div class="card">
+<h3>New Court Booking</h3>
+<label>Customer name<input id="customer" placeholder="Customer name"></label>
+<label>Contact<input id="phone" type="tel" placeholder="Mobile number"></label>
+<label>Court<select id="court"><option>Court 1</option><option>Court 2</option><option>Court 3</option><option>Court 4</option><option>Multiple courts</option></select></label>
+<label>Date<input id="date" type="date"></label>
+<label>Start time<input id="start" type="time" step="1800"></label>
+<label>End time<input id="end" type="time" step="1800"></label>
+<label>Rate per hour (₹)<input id="rate" type="number" value="400" min="0"></label>
+<label>Amount received (₹)<input id="paid" type="number" value="0" min="0"></label>
+<button onclick="addBooking()">Save Booking</button>
+<div class="scroll"><table><thead><tr><th>Customer</th><th>Court</th><th>Time</th><th>Total</th><th>Paid</th><th>Due</th></tr></thead><tbody id="bookingRows"></tbody></table></div>
+</div>
+<div class="card">
+<h3>Record Sale</h3>
+<label>Item<select id="item"><option>Shuttlecocks</option><option>Racket rental</option><option>Water</option><option>Fast&Up</option><option>Diet Coke</option><option>ORS</option><option>Red Bull</option></select></label>
+<label>Quantity<input id="qty" type="number" min="1" value="1"></label>
+<label>Total sale amount (₹)<input id="saleAmount" type="number" min="0"></label>
+<label>Amount received (₹)<input id="salePaid" type="number" min="0" value="0"></label>
+<button onclick="addSale()">Save Sale</button>
+<div class="scroll"><table><thead><tr><th>Item</th><th>Qty</th><th>Total</th><th>Paid</th><th>Due</th></tr></thead><tbody id="saleRows"></tbody></table></div>
+</div>
+<div class="card">
+<h3>Record Expense</h3>
+<label>Description<input id="expenseName" placeholder="Expense description"></label>
+<label>Amount (₹)<input id="expenseAmount" type="number" min="0"></label>
+<button onclick="addExpense()">Save Expense</button>
+<div id="expenseRows"></div>
+</div>
+<div class="card">
+<h3>Data & Reports</h3>
+<button onclick="exportCSV()">Export CSV Report</button>
+<p><small>Prototype only: data is stored in this browser on this device. It does not sync between staff phones yet. Do not use this version for confidential or official accounts.</small></p>
+</div>
+</main>
+<script>
+const key='pinnacle-dashboard-v1';
+let data={bookings:[],sales:[],expenses:[]};
+try{data=JSON.parse(localStorage.getItem(key))||data}catch(e){}
+const $=id=>document.getElementById(id);
+const today=()=>{let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const money=n=>'₹'+Number(n||0).toLocaleString('en-IN');
+$('date').value=today();
+function persist(){localStorage.setItem(key,JSON.stringify(data));render()}
+function addBooking(){
+let customer=$('customer').value.trim(),start=$('start').value,end=$('end').value,date=$('date').value;
+if(!customer||!start||!end||!date||end<=start)return alert('Enter a name, date and valid times.');
+let hours=(new Date('2000-01-01T'+end)-new Date('2000-01-01T'+start))/3600000;
+let total=hours*Number($('rate').value||0),paid=Number($('paid').value||0);
+if(paid<0||paid>total)return alert('Check the amount received.');
+data.bookings.push({customer,phone:$('phone').value,court:$('court').value,date,start,end,total,paid});
+persist();$('customer').value='';$('phone').value='';
+}
+function addSale(){
+let qty=Number($('qty').value),total=Number($('saleAmount').value),paid=Number($('salePaid').value);
+if(qty<1||$('saleAmount').value===''||total<0||paid<0||paid>total)return alert('Check quantity, sale and payment.');
+data.sales.push({item:$('item').value,qty,total,paid,date:today()});persist();$('saleAmount').value='';
+}
+function addExpense(){
+let name=$('expenseName').value.trim(),amount=Number($('expenseAmount').value);
+if(!name||$('expenseAmount').value===''||amount<0)return alert('Enter expense details.');
+data.expenses.push({name,amount,date:today()});persist();$('expenseName').value='';$('expenseAmount').value='';
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+let d=today(),b=data.bookings.filter(x=>x.date===d),s=data.sales.filter(x=>x.date===d),e=data.expenses.filter(x=>x.date===d);
+let collected=b.reduce((a,x)=>a+x.paid,0)+s.reduce((a,x)=>a+x.paid,0),cost=e.reduce((a,x)=>a+x.amount,0);
+$('collections').textContent=money(collected);$('count').textContent=b.length;$('costs').textContent=money(cost);$('net').textContent=money(collected-cost);
+$('bookingRows').innerHTML=b.map(x=>`<tr><td>${esc(x.customer)}</td><td>${esc(x.court)}</td><td>${x.start}-${x.end}</td><td>${money(x.total)}</td><td>${money(x.paid)}</td><td>${money(x.total-x.paid)}</td></tr>`).join('')||'<tr><td colspan="6">No bookings today</td></tr>';
+$('saleRows').innerHTML=s.map(x=>`<tr><td>${esc(x.item)}</td><td>${x.qty}</td><td>${money(x.total)}</td><td>${money(x.paid)}</td><td>${money(x.total-x.paid)}</td></tr>`).join('')||'<tr><td colspan="5">No sales today</td></tr>';
+$('expenseRows').innerHTML=e.map(x=>`<p>${esc(x.name)} — ${money(x.amount)}</p>`).join('')||'<small>No expenses today</small>';
+}
+function exportCSV(){
+let rows=[['Type','Date','Name/Item','Court','Start','End','Qty','Total','Paid','Due']];
+data.bookings.forEach(x=>rows.push(['Booking',x.date,x.customer,x.court,x.start,x.end,'',x.total,x.paid,x.total-x.paid]));
+data.sales.forEach(x=>rows.push(['Sale',x.date,x.item,'','','',x.qty,x.total,x.paid,x.total-x.paid]));
+data.expenses.forEach(x=>rows.push(['Expense',x.date,x.name,'','','','','',x.amount,'']));
+let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='pinnacle-report.csv';a.click();URL.revokeObjectURL(a.href);
+}
+render();
+</script>
+</body>
+</html>
